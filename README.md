@@ -1,0 +1,149 @@
+# @pipeworx/bounceban
+
+Verify a single email address via BounceBan's waterfall-tuned endpoint
+(bounceban.com), including catch-all detection. Part of
+`enrich-waterfall`'s `enrich_verify_email` ordered verifiers (fleet #2860).
+
+Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 1743+ live data sources. This is an independent, unofficial integration — not affiliated with, endorsed by, or published by the upstream provider.
+
+## Tools
+
+- `bounceban_verify(email, _apiKey)` — status/result, explicit `catch_all`,
+  disposable/role/free flags.
+
+## Auth
+
+BYO only. Pass your BounceBan API key as `_apiKey` (header `Authorization`,
+**no `Bearer ` prefix**). Find your key at
+https://bounceban.com/app/api/settings. No platform key (D4).
+
+## Data sources
+
+- `https://api-waterfall.bounceban.com/v1/verify/single` — BounceBan's
+  waterfall-specific host, built to block synchronously (up to 80s) for a
+  definitive result rather than handing back a task to poll. BounceBan also
+  publishes a standard `api.bounceban.com` host for the same verb; this pack
+  deliberately uses the waterfall one since that is the shape
+  `enrich_verify_email` needs.
+
+## Verification notes (fleet #2860, 2026-10-08, no vendor key held)
+
+- **Edge-probed the EXACT host/path this pack calls.** No `Authorization`
+  header: HTTP 401 `{"error":"Authorization header is required"}`. An
+  invalid key: HTTP 401 `{"msg":"Authorization information is missing or
+  invalid."}`. Two different bodies for two different failures confirms the
+  header is read, not just a blanket 401. This pack's code checks both
+  `error` and `msg` fields when surfacing the reason.
+- **BounceBan documents a 408 for a timed-out verification** (its own
+  waterfall-integration guide) — this pack surfaces that as a named,
+  distinct error ("verification timed out server-side") rather than letting
+  it fall through to a generic HTTP-error path, since a caller retrying or
+  moving to the next verifier needs to know it was a timeout, not a bad
+  email or a bad key.
+- **Response field names (`status`/`result`, `is_catch_all`) are inferred**
+  from BounceBan's public no-code-integration docs and GitHub
+  `skill-email-verification` description, not a confirmed live success
+  payload — we hold no BounceBan key. The parser accepts either
+  `is_catch_all`/`catch_all` as a boolean, or falls back to checking whether
+  the status string itself contains "catch" if neither field is present.
+- **Not verified (no key held):** the exact field name BounceBan uses for
+  the main verdict (`status` vs `result`); the full enumeration of status
+  values beyond "catch-all" and the obvious valid/invalid.
+
+## Quick Start
+
+Add to your MCP client (Claude Desktop, Cursor, Windsurf, etc.):
+
+```json
+{
+  "mcpServers": {
+    "bounceban": {
+      "url": "https://gateway.pipeworx.io/bounceban/mcp"
+    }
+  }
+}
+```
+
+### What this endpoint actually serves
+
+`tools/list` at `https://gateway.pipeworx.io/bounceban/mcp` returns the tools in the table
+above **plus the shared Pipeworx meta-tools** — `ask_pipeworx`,
+`discover_tools`, `search_within`, `remember`/`recall` and the rest of the
+gateway-wide set. So the tool count you see is larger than this table: a
+single-pack endpoint currently lists roughly 30 shared tools alongside the
+pack's own. The connection's `initialize` response states its exact scope, and
+is the authoritative answer for a given day.
+
+This is deliberate, not multiplexing by accident. The meta-tools are what let a
+scoped connection answer a question this pack does not cover — via
+`ask_pipeworx`, which routes across the whole catalog — without you adding a
+second MCP server. There is currently no way to mount a pack endpoint without
+them; if the extra schemas cost you more context than the routing is worth,
+connect to the full gateway once rather than to several pack endpoints.
+
+Or connect to the full Pipeworx gateway to get every pack's tools listed
+directly, instead of just this one's:
+
+```json
+{
+  "mcpServers": {
+    "pipeworx": {
+      "url": "https://gateway.pipeworx.io/mcp"
+    }
+  }
+}
+```
+
+Both URLs reach the same gateway and the same 1743+ data sources. The
+only difference is which pack's tools are listed **directly**; `ask_pipeworx`
+reaches all of them from either one.
+
+## No MCP client? Call it over HTTP
+
+This pack takes your own API key (`_apiKey`) — we don't front one for it, so there's no curl here that would run without it. Inspect any tool: `GET https://gateway.pipeworx.io/v1/tools/bounceban_verify`. Find one: `POST https://gateway.pipeworx.io/v1/tools/search_packs` with `{"query":"..."}`.
+
+## Standalone (no gateway account)
+
+This package also runs as a local stdio MCP server — no Pipeworx account, no
+gateway round-trip:
+
+```json
+{
+  "mcpServers": {
+    "bounceban": {
+      "command": "npx",
+      "args": ["-y", "@pipeworx/mcp-bounceban"]
+    }
+  }
+}
+```
+
+Or run it directly to confirm it starts:
+
+```bash
+npx -y @pipeworx/mcp-bounceban
+```
+
+It speaks MCP over stdin/stdout and answers `initialize`/`tools/list`/`tools/call`
+for **only** this pack's tools — none of the shared meta-tools the gateway
+connection above adds. Same source, same tools, no ask_pipeworx routing.
+
+## Using with ask_pipeworx
+
+Instead of calling tools directly, you can ask questions in plain English —
+this works on the pack endpoint above as well as on the full gateway:
+
+```
+ask_pipeworx({ question: "your question about Bounceban data" })
+```
+
+The gateway picks the right tool and fills the arguments automatically.
+
+## More
+
+- [Docs and guides](https://pipeworx.io/docs)
+- [pipeworx.io](https://pipeworx.io)
+
+## License
+
+MIT
