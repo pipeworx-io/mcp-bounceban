@@ -3,7 +3,7 @@
   "name": "io.github.pipeworx-io/bounceban",
   "title": "Bounceban",
   "description": "BounceBan MCP — wraps the BounceBan email-verification API (bounceban.com)",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "websiteUrl": "https://pipeworx.io/packs/bounceban",
   "repository": {
     "url": "https://github.com/pipeworx-io/mcp-bounceban",

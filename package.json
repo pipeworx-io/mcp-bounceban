@@ -1,6 +1,6 @@
 {
   "name": "@pipeworx/mcp-bounceban",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "BounceBan MCP — wraps the BounceBan email-verification API (bounceban.com)",
   "type": "module",
   "main": "src/index.ts",
@@ -26,7 +26,7 @@
     "@cloudflare/workers-types": "^4.20260405.1"
   },
   "pipeworx": {
-    "sourceHash": "v1-8b3bf085721bbbabc2a0136d5ac7a3458dac7e0cb965902e79dc3915fd0b4102",
-    "sourceCommit": "e369dfedd93d5fcbf521281559a146302c14e1a0"
+    "sourceHash": "v1-6963c0c92015e5a117e0c0328a55f948054046d35fbe2e8f703d9a071e331b94",
+    "sourceCommit": "5d8d3a58a457b8464c117515d81b8b6ecb53fdfb"
   }
 }
